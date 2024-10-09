@@ -107,10 +107,10 @@ def crop_resize(input_raster_filename='',
 def blank_raster(extent_shapefile=''):
     calculationExtent = gpd.read_file(extent_shapefile)
 
-    minX = floor(calculationExtent.bounds.minx)
-    minY = floor(calculationExtent.bounds.miny)
-    maxX = ceil(calculationExtent.bounds.maxx)
-    maxY = ceil(calculationExtent.bounds.maxy)
+    minX = floor(calculationExtent.bounds.minx.iloc[0])
+    minY = floor(calculationExtent.bounds.miny.iloc[0])
+    maxX = ceil(calculationExtent.bounds.maxx.iloc[0])
+    maxY = ceil(calculationExtent.bounds.maxy.iloc[0])
     longRange = sqrt((minX - maxX)**2)
     latRange = sqrt((minY - maxY)**2)
 
@@ -172,12 +172,12 @@ def idw_interpolation(input_point_shapefile='',
                       search_radious=4,
                       output_resolution=250):
     blank_raster(extent_shapefile)
-    
+
     blank_filename = extent_shapefile.rsplit('.', 1)[0] + '_blank.tif'
     crop_resize(input_raster_filename=blank_filename,
                 extent_shapefile_name=extent_shapefile,
                 max_height_or_width=output_resolution)
-    
+
     resized_raster_name = blank_filename.rsplit('.', 1)[0] + '_resized.tif'
     #     baseRasterFile = rasterio.open(resized_raster_name) # baseRasterFile stands for resampled elevation.
 
@@ -227,12 +227,12 @@ def accuracy_standard_idw(input_point_shapefile='',
                           search_radious=4,
                           output_resolution=250):
     blank_raster(extent_shapefile)
-    
+
     blank_filename = extent_shapefile.rsplit('.', 1)[0] + '_blank.tif'
     crop_resize(input_raster_filename=blank_filename,
                 extent_shapefile_name=extent_shapefile,
                 max_height_or_width=output_resolution)
-    
+
     resized_raster_name = blank_filename.rsplit('.', 1)[0] + '_resized.tif'
 
     with rasterio.open(resized_raster_name) as baseRasterFile:
@@ -313,11 +313,11 @@ class sigmoidStandardization():
         self.in_array = input_array
         self.arr_mean = self.in_array.mean()
         self.arr_std = self.in_array.std()
-        
+
     def transform(self, number):
         self.transformed  = 1/(1 + np.exp(-(number - self.arr_mean)/self.arr_std))
         return self.transformed
-    
+
     def inverse_transform(self, number):
         self.reverse_transformed = np.log(number/(1-number))*self.arr_std + self.arr_mean
         return self.reverse_transformed
@@ -356,10 +356,10 @@ def regression_idw_interpolation(input_point_shapefile='',
         obser_df['elevation'] = re_elevation.read(1)[lons, lats]  # read elevation data for each station.
         obser_df['data_value'] = metStat[column_name]
         obser_df['predicted'] = 0.0
-        
+
         raster_transform = sigmoidStandardization(obser_df['elevation'])
         obser_df['trnsfrmd_raster'] = raster_transform.transform(obser_df['elevation'])
-        
+
         upper_range = obser_df["data_value"].max() + obser_df["data_value"].std()
         lower_range = obser_df["data_value"].min() - obser_df["data_value"].std()
 
